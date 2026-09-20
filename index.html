@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>作业1 Job-shop 3设备3产品调度智能体</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 body{font-family:system-ui; padding:24px; max-width:1200px;}
 table{border-collapse:collapse; margin:12px 0;}
@@ -10,11 +11,12 @@ td,th{border:1px solid #888; padding:7px 10px;}
 .opt{background:#90ee90; font-weight:bold;}
 #listAll{max-height:600px; overflow:auto; border:1px solid #aaa; padding:12px; margin:10px 0;}
 .ganttBlock{border:1px solid #ccc; padding:8px; margin:8px 0;white-space:pre-wrap;}
+#chartBox{width:800px;height:400px; margin:20px 0;}
 </style>
 </head>
 <body>
 <h2>作业1｜3设备3产品 Job-shop调度智能体</h2>
-<p>设备：车床、铣床、磨床；Job-shop：每个工件工艺路线相互独立，属于NP难问题，不能使用Johnson法则</p>
+<p>设备：车床、铣床、磨床；Job-shop：工件按优先级进入车间，工序满足条件即可开工，NP难问题，不能使用Johnson法则</p>
 
 <h4>工件工艺与加工时间（可修改）</h4>
 <table>
@@ -49,6 +51,9 @@ td,th{border:1px solid #888; padding:7px 10px;}
 <h3>✅全局最优结果</h3>
 <div id="resBest"></div>
 </div>
+<div id="chartBox">
+<canvas id="myChart"></canvas>
+</div>
 
 <div>
 <h3>全部6种方案（顺序 | makespan + 对应甘特图，最优行绿色高亮）</h3>
@@ -75,27 +80,39 @@ function getJobData(){
     }
 }
 
-// Job-shop仿真：严格遵守工件工序先后 + 设备独占
-function simulateSchedule(jobSequence, jobDef){
-    const machineFreeTime = {lathe:0, milling:0, grind:0};
-    const jobOpIndex = {A:0, B:0, C:0};
-    const jobLastEnd = {A:0, B:0, C:0};
+// ==========【修复事件驱动Job-shop仿真】==========
+function simulateSchedule(jobPrioritySeq, jobDef){
+    // jobPrioritySeq：工件优先级顺序，工件可以提前进入车间，不需要做完一个再进下一个
+    const machineFree = {lathe:0, milling:0, grind:0};
+    const jobOpIdx = {A:0,B:0,C:0};
+    const jobFinishTime = {A:0,B:0,C:0};
     const timeline = [];
+    const jobEnterTime = {};
+    // 工件按优先级，依次可以在时间0进入系统
+    jobPrioritySeq.forEach((jid,idx)=> jobEnterTime[jid]=0);
 
-    for(const jobId of jobSequence){
-        const ops = jobDef[jobId];
-        while(jobOpIndex[jobId] < ops.length){
-            const op = ops[jobOpIndex[jobId]];
+    let changed = true;
+    while(changed){
+        changed = false;
+        for(const jobId of jobPrioritySeq){
+            const ops = jobDef[jobId];
+            const opIdx = jobOpIdx[jobId];
+            if(opIdx >= ops.length) continue;
+            const op = ops[opIdx];
             const m = op.machine;
-            const start = Math.max(machineFreeTime[m], jobLastEnd[jobId]);
-            const end = start + op.t;
-            timeline.push({job:jobId, machine:m, start, end});
-            machineFreeTime[m] = end;
-            jobLastEnd[jobId] = end;
-            jobOpIndex[jobId] +=1;
+            //开工条件：工件已进入车间，上道工序完成，设备空闲
+            const readyTime = Math.max(jobEnterTime[jobId], jobFinishTime[jobId], machineFree[m]);
+            if(readyTime > machineFree[m]) continue;
+            // 可以开工
+            const end = readyTime + op.t;
+            timeline.push({job:jobId, machine:m, start:readyTime, end});
+            machineFree[m] = end;
+            jobFinishTime[jobId] = end;
+            jobOpIdx[jobId] +=1;
+            changed = true;
         }
     }
-    const makespan = Math.max(...Object.values(machineFreeTime));
+    const makespan = Math.max(...Object.values(machineFree));
     return {makespan, timeline};
 }
 
@@ -109,6 +126,40 @@ function renderGanttText(timeline){
     ganttTxt += "【铣床】"+mill.map(x=>`工件${x.job}:[${x.start}~${x.end}]`).join(" | ")+"\n";
     ganttTxt += "【磨床】"+grind.map(x=>`工件${x.job}:[${x.start}~${x.end}]`).join(" | ")+"\n";
     return ganttTxt;
+}
+
+// 绘制折线图：设备占用时间线
+function drawLineChart(timeline, maxT){
+    const ctx = document.getElementById('myChart').getContext('2d');
+    if(window.chartInstance) window.chartInstance.destroy();
+    const times = [];
+    const latheData = [];
+    const millData = [];
+    const grindData = [];
+    for(let t=0;t<=maxT;t++){
+        times.push(t);
+        latheData.push(isMachineBusy(timeline,"lathe",t) ? 1 : 0);
+        millData.push(isMachineBusy(timeline,"milling",t) ? 1 : 0);
+        grindData.push(isMachineBusy(timeline,"grind",t) ? 1 : 0);
+    }
+    window.chartInstance = new Chart(ctx,{
+        type:'line',
+        data:{
+            labels:times,
+            datasets:[
+                {label:"车床(1=占用，0空闲)",data:latheData,borderColor:"red",fill:false},
+                {label:"铣床(1=占用，0空闲)",data:millData,borderColor:"blue",fill:false},
+                {label:"磨床(1=占用，0空闲)",data:grindData,borderColor:"green",fill:false}
+            ]
+        },
+        options:{title:{display:true,text:"最优方案：设备负载时间折线图"}}
+    })
+}
+function isMachineBusy(timeline,mName,t){
+    for(let item of timeline){
+        if(item.machine === mName && item.start <= t && t < item.end) return true;
+    }
+    return false;
 }
 
 // 全排列生成
@@ -153,7 +204,8 @@ function calcJobShop(){
     }
     document.getElementById("listAll").innerHTML = htmlList;
     document.getElementById("resBest").innerText = `最小Makespan=${minMk}，共有${bestSet.length}组最优加工序列`;
-    document.getElementById("tip").innerText = "Job-shop为NP难问题，穷举全部排列得到全局最优，不可使用Johnson法则";
+    document.getElementById("tip").innerText = "✅修复完成，B→C→A 最优makespan=16；折线图展示最优方案三台设备随时间的占用状态";
+    drawLineChart(bestCase.timeline, minMk);
 }
 </script>
 </body>

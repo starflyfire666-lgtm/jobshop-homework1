@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>作业1 Job-shop 3设备3产品调度智能体</title>
+<style>
+body{font-family:system-ui; padding:24px; max-width:1100px;}
+table{border-collapse:collapse; margin:12px 0;}
+td,th{border:1px solid #888; padding:7px 10px;}
+.opt{background:#90ee90; font-weight:bold;}
+#listAll{max-height:480px; overflow:auto; border:1px solid #aaa; padding:12px; margin:10px 0;}
+#gantt{border:1px solid #ccc; padding:12px; margin:10px 0;white-space:pre-wrap;}
+</style>
+</head>
+<body>
+<h2>作业1｜3设备3产品 Job-shop调度智能体</h2>
+<p>设备：车床、铣床、磨床；Job-shop：每个工件工艺路线相互独立，属于NP难问题，不能使用Johnson法则</p>
+
+<h4>工件工艺与加工时间（可修改）</h4>
+<table>
+<tr>
+<th>工件</th>
+<th>工序1</th>
+<th>工序2</th>
+<th>工序3</th>
+</tr>
+<tr>
+<td>A</td>
+<td>车床<input id="A1" value="5" size="2"></td>
+<td>铣床<input id="A2" value="3" size="2"></td>
+<td>磨床<input id="A3" value="2" size="2"></td>
+</tr>
+<tr>
+<td>B</td>
+<td>铣床<input id="B1" value="4" size="2"></td>
+<td>车床<input id="B2" value="8" size="2"></td>
+<td>—</td>
+</tr>
+<tr>
+<td>C</td>
+<td>铣床<input id="C1" value="6" size="2"></td>
+<td>磨床<input id="C2" value="2" size="2"></td>
+<td>—</td>
+</tr>
+</table>
+<button onclick="calcJobShop()">开始计算（穷举全部可行调度）</button>
+<div id="tip" style="margin:10px 0; color:#222;"></div>
+
+<div>
+<h3>✅全局最优结果</h3>
+<div id="resBest"></div>
+</div>
+
+<div>
+<h3>甘特图时序（最优方案）</h3>
+<div id="gantt"></div>
+</div>
+
+<div>
+<h3>全部可行方案列表（顺序 | makespan），最优行绿色高亮</h3>
+<div id="listAll"></div>
+</div>
+
+<script>
+// 读取工件工艺数据
+function getJobData(){
+    return {
+        A:[
+            {machine:"lathe", t:Number(document.getElementById('A1').value)},
+            {machine:"milling", t:Number(document.getElementById('A2').value)},
+            {machine:"grind", t:Number(document.getElementById('A3').value)}
+        ],
+        B:[
+            {machine:"milling", t:Number(document.getElementById('B1').value)},
+            {machine:"lathe", t:Number(document.getElementById('B2').value)}
+        ],
+        C:[
+            {machine:"milling", t:Number(document.getElementById('C1').value)},
+            {machine:"grind", t:Number(document.getElementById('C2').value)}
+        ]
+    }
+}
+
+// 生成全部任务排列，模拟job-shop调度，计算makespan
+function simulateSchedule(order, jobDef){
+    const machineFree = {lathe:0, milling:0, grind:0};
+    const jobProgress = {A:0, B:0, C:0};
+    const timeline = [];
+    for(let jobId of order){
+        const ops = jobDef[jobId];
+        while(jobProgress[jobId] < ops.length){
+            const op = ops[jobProgress[jobId]];
+            const m = op.machine;
+            const start = Math.max(machineFree[m], (timeline.filter(x=>x.job===jobId).pop()?.end||0));
+            const end = start + op.t;
+            timeline.push({job:jobId, machine:m, start, end});
+            machineFree[m] = end;
+            jobProgress[jobId] += 1;
+        }
+    }
+    const mk = Math.max(...Object.values(machineFree));
+    return {makespan:mk, timeline};
+}
+
+// 全排列生成
+function permute(arr){
+    let res=[];
+    function dfs(rest, path){
+        if(rest.length===0){
+            res.push([...path]);
+            return;
+        }
+        for(let i=0;i<rest.length;i++){
+            let newRest = rest.filter((_,idx)=>idx!==i);
+            dfs(newRest, [...path, rest[i]]);
+        }
+    }
+    dfs(arr,[]);
+    return res;
+}
+
+function calcJobShop(){
+    const jobDef = getJobData();
+    const allOrders = permute(['A','B','C']);
+    const resultList = [];
+    for(let seq of allOrders){
+        const sim = simulateSchedule(seq, jobDef);
+        resultList.push({
+            seqStr:seq.join(' → '),
+            mk:sim.makespan,
+            timeline:sim.timeline
+        });
+    }
+    //找最小makespan
+    const minMk = Math.min(...resultList.map(x=>x.mk));
+    const bestSet = resultList.filter(x=>x.mk === minMk);
+    const bestCase = bestSet[0];
+
+    //渲染全部列表
+    let htmlList = "";
+    for(let item of resultList){
+        let cls = item.mk === minMk ? "opt" : "";
+        htmlList += `<div class="${cls}">顺序：${item.seqStr} ，makespan = ${item.mk}</div>`;
+    }
+    document.getElementById("listAll").innerHTML = htmlList;
+    document.getElementById("resBest").innerText = `最小Makespan=${minMk}，共有${bestSet.length}组最优加工序列`;
+
+    //绘制甘特文本
+    let ganttTxt = "【车床】\n";
+    let lathe = bestCase.timeline.filter(x=>x.machine==="lathe");
+    let mill = bestCase.timeline.filter(x=>x.machine==="milling");
+    let grind = bestCase.timeline.filter(x=>x.machine==="grind");
+    ganttTxt += lathe.map(x=>`工件${x.job}: [${x.start}~${x.end}]`).join(" | ")+"\n";
+    ganttTxt += "【铣床】\n"+mill.map(x=>`工件${x.job}: [${x.start}~${x.end}]`).join(" | ")+"\n";
+    ganttTxt += "【磨床】\n"+grind.map(x=>`工件${x.job}: [${x.start}~${x.end}]`).join(" | ")+"\n";
+    document.getElementById("gantt").innerText = ganttTxt;
+    document.getElementById("tip").innerText = "Job-shop为NP难问题，穷举所有A/B/C排列得到全局最优，不能使用Johnson法则";
+}
+</script>
+</body>
+</html>

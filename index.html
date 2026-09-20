@@ -1,212 +1,2683 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
 <meta charset="UTF-8">
-<title>作业1 Job-shop 3设备3产品调度智能体</title>
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>作业1｜3设备3产品 Job-shop 调度智能体</title>
+
+<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
-body{font-family:system-ui; padding:24px; max-width:1200px;}
-table{border-collapse:collapse; margin:12px 0;}
-td,th{border:1px solid #888; padding:7px 10px;}
-.opt{background:#90ee90; font-weight:bold;}
-#listAll{max-height:600px; overflow:auto; border:1px solid #aaa; padding:12px; margin:10px 0;}
-.ganttBlock{border:1px solid #ccc; padding:8px; margin:8px 0;white-space:pre-wrap;}
-#chartBox{width:800px;height:400px; margin:20px 0;}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 25px;
+
+    font-family:
+        "Microsoft YaHei",
+        "PingFang SC",
+        Arial,
+        sans-serif;
+
+    background: #f5f7fa;
+
+    color: #222;
+}
+
+.container {
+    max-width: 1400px;
+    margin: auto;
+}
+
+h1 {
+    margin-bottom: 5px;
+}
+
+h2 {
+    margin-top: 30px;
+
+    padding-left: 10px;
+
+    border-left: 5px solid #1976d2;
+}
+
+.description {
+
+    background: white;
+
+    border-radius: 8px;
+
+    padding: 18px 22px;
+
+    margin: 15px 0;
+
+    line-height: 1.8;
+
+    box-shadow:
+        0 2px 8px rgba(0,0,0,0.08);
+}
+
+.card {
+
+    background: white;
+
+    border-radius: 8px;
+
+    padding: 20px;
+
+    margin-top: 15px;
+
+    box-shadow:
+        0 2px 8px rgba(0,0,0,0.08);
+}
+
+table {
+
+    border-collapse: collapse;
+
+    width: 100%;
+
+    margin: 15px 0;
+
+    background: white;
+}
+
+th,
+td {
+
+    border: 1px solid #ccc;
+
+    padding: 10px;
+
+    text-align: center;
+}
+
+th {
+
+    background: #eef3f8;
+
+}
+
+input {
+
+    width: 70px;
+
+    padding: 6px;
+
+    text-align: center;
+
+    border: 1px solid #aaa;
+
+    border-radius: 4px;
+
+    font-size: 15px;
+}
+
+button {
+
+    border: none;
+
+    border-radius: 6px;
+
+    padding: 11px 24px;
+
+    margin: 6px 5px 6px 0;
+
+    font-size: 16px;
+
+    cursor: pointer;
+
+    color: white;
+
+    background: #1976d2;
+}
+
+button:hover {
+
+    background: #125aa0;
+}
+
+button.reset {
+
+    background: #607d8b;
+}
+
+button.reset:hover {
+
+    background: #455a64;
+}
+
+.best {
+
+    background: #e8f5e9;
+
+    border: 2px solid #4caf50;
+
+}
+
+.best-number {
+
+    font-size: 32px;
+
+    font-weight: bold;
+
+    color: #2e7d32;
+
+    margin: 10px 0;
+}
+
+.stats {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 15px;
+
+    margin: 15px 0;
+}
+
+.stat {
+
+    background: #f5f7fa;
+
+    padding: 12px 20px;
+
+    border-radius: 6px;
+
+    min-width: 180px;
+}
+
+.stat b {
+
+    display: block;
+
+    font-size: 20px;
+
+    margin-top: 5px;
+}
+
+.chart-container {
+
+    background: white;
+
+    border-radius: 8px;
+
+    padding: 20px;
+
+    margin-top: 15px;
+
+    box-shadow:
+        0 2px 8px rgba(0,0,0,0.08);
+}
+
+.gantt-box {
+
+    position: relative;
+
+    width: 100%;
+
+    height: 430px;
+}
+
+.line-box {
+
+    position: relative;
+
+    width: 100%;
+
+    height: 350px;
+}
+
+.scheme {
+
+    background: white;
+
+    border: 1px solid #ccc;
+
+    border-radius: 7px;
+
+    padding: 15px;
+
+    margin: 12px 0;
+}
+
+.scheme.best {
+
+    background: #e8f5e9;
+
+    border: 2px solid #4caf50;
+}
+
+.scheme-title {
+
+    font-size: 17px;
+
+    font-weight: bold;
+
+    margin-bottom: 10px;
+}
+
+.tag {
+
+    display: inline-block;
+
+    background: #4caf50;
+
+    color: white;
+
+    padding: 3px 9px;
+
+    border-radius: 12px;
+
+    font-size: 13px;
+
+    margin-left: 8px;
+}
+
+.gantt-text {
+
+    background: #f7f7f7;
+
+    padding: 12px;
+
+    border-radius: 5px;
+
+    font-family: Consolas, monospace;
+
+    white-space: pre-wrap;
+
+    line-height: 1.8;
+}
+
+.error {
+
+    color: #c62828;
+
+    font-weight: bold;
+
+    margin-top: 10px;
+}
+
+.success {
+
+    color: #2e7d32;
+
+    font-weight: bold;
+}
+
+.small {
+
+    color: #666;
+
+    font-size: 14px;
+}
+
 </style>
+
 </head>
+
+
 <body>
-<h2>作业1｜3设备3产品 Job-shop调度智能体</h2>
-<p>设备：车床、铣床、磨床；Job-shop：工件按优先级进入车间，工序满足条件即可开工，NP难问题，不能使用Johnson法则</p>
 
-<h4>工件工艺与加工时间（可修改）</h4>
+
+<div class="container">
+
+
+<h1>
+    作业1｜3设备3产品 Job-shop 调度智能体
+</h1>
+
+
+<div class="description">
+
+    <b>实验目标：</b>
+
+    对 3 台设备、3 个工件组成的 Job-shop
+    调度问题进行求解。
+
+    <br><br>
+
+    <b>设备：</b>
+
+    车床、铣床、磨床
+
+    <br>
+
+    <b>目标：</b>
+
+    最小化最大完工时间
+    <b>Makespan（Cmax）</b>
+
+    <br>
+
+    <b>算法：</b>
+
+    枚举各设备上的工序加工顺序，
+    检查工艺约束和机器约束，
+    使用拓扑排序计算最早开始时间。
+
+</div>
+
+
+<!-- ======================================================
+     一、输入数据
+====================================================== -->
+
+
+<h2>一、工件工艺与加工时间</h2>
+
+
+<div class="card">
+
+
 <table>
+
+<thead>
+
 <tr>
+
 <th>工件</th>
+
 <th>工序1</th>
+
 <th>工序2</th>
+
 <th>工序3</th>
+
 </tr>
+
+</thead>
+
+
+<tbody>
+
+
 <tr>
-<td>A</td>
-<td>车床<input id="A1" value="5" size="2"></td>
-<td>铣床<input id="A2" value="3" size="2"></td>
-<td>磨床<input id="A3" value="2" size="2"></td>
+
+<td>
+    <b>A</b>
+</td>
+
+<td>
+
+    车床
+
+    <input
+        id="A1"
+        type="number"
+        min="0.1"
+        step="0.1"
+        value="5"
+    >
+
+</td>
+
+
+<td>
+
+    铣床
+
+    <input
+        id="A2"
+        type="number"
+        min="0.1"
+        step="0.1"
+        value="3"
+    >
+
+</td>
+
+
+<td>
+
+    磨床
+
+    <input
+        id="A3"
+        type="number"
+        min="0.1"
+        step="0.1"
+        value="2"
+    >
+
+</td>
+
 </tr>
+
+
 <tr>
-<td>B</td>
-<td>铣床<input id="B1" value="4" size="2"></td>
-<td>车床<input id="B2" value="8" size="2"></td>
-<td>—</td>
+
+<td>
+    <b>B</b>
+</td>
+
+
+<td>
+
+    铣床
+
+    <input
+        id="B1"
+        type="number"
+        min="0.1"
+        step="0.1"
+        value="4"
+    >
+
+</td>
+
+
+<td>
+
+    车床
+
+    <input
+        id="B2"
+        type="number"
+        min="0.1"
+        step="0.1"
+        value="8"
+    >
+
+</td>
+
+
+<td>
+    —
+</td>
+
 </tr>
+
+
 <tr>
-<td>C</td>
-<td>铣床<input id="C1" value="6" size="2"></td>
-<td>磨床<input id="C2" value="2" size="2"></td>
+
+<td>
+    <b>C</b>
+</td>
+
+
+<td>
+
+    铣床
+
+    <input
+        id="C1"
+        type="number"
+        min="0.1"
+        step="0.1"
+        value="6"
+    >
+
+</td>
+
+
+<td>
+
+    磨床
+
+    <input
+        id="C2"
+        type="number"
+        min="0.1"
+        step="0.1"
+        value="2"
+    >
+
+</td>
+
+
+<td>
+    —
+</td>
+
 </tr>
+
+
+</tbody>
+
 </table>
-<button onclick="calcJobShop()">开始计算（穷举全部可行调度）</button>
-<div id="tip" style="margin:10px 0; color:#222;"></div>
 
-<div>
-<h3>✅全局最优结果</h3>
-<div id="resBest"></div>
-</div>
-<div id="chartBox">
-<canvas id="myChart"></canvas>
+
+<button onclick="calculateJobShop()">
+    开始计算
+</button>
+
+
+<button
+    class="reset"
+    onclick="resetData()"
+>
+    恢复默认数据
+</button>
+
+
+<div
+    id="errorMessage"
+    class="error"
+></div>
+
+
 </div>
 
-<div>
-<h3>全部6种方案（顺序 | makespan + 对应甘特图，最优行绿色高亮）</h3>
-<div id="listAll"></div>
+
+
+<!-- ======================================================
+     二、最优结果
+====================================================== -->
+
+
+<h2>二、全局最优结果</h2>
+
+
+<div
+    id="bestResult"
+    class="card best"
+>
+
+    点击“开始计算”后显示结果。
+
 </div>
+
+
+
+<!-- ======================================================
+     三、甘特图
+====================================================== -->
+
+
+<h2>三、最优方案 Job-shop 甘特图</h2>
+
+
+<div class="chart-container">
+
+
+<p class="small">
+
+    横轴为时间，纵轴为设备。
+    每个色块表示对应工件在该设备上的加工区间。
+
+</p>
+
+
+<div class="gantt-box">
+
+    <canvas id="ganttChart"></canvas>
+
+</div>
+
+
+</div>
+
+
+
+<!-- ======================================================
+     四、折线图
+====================================================== -->
+
+
+<h2>四、设备占用状态折线图</h2>
+
+
+<div class="chart-container">
+
+
+<p class="small">
+
+    设备状态：
+    <b>1 = 加工中</b>，
+    <b>0 = 空闲</b>。
+
+</p>
+
+
+<div class="line-box">
+
+    <canvas id="lineChart"></canvas>
+
+</div>
+
+
+</div>
+
+
+
+<!-- ======================================================
+     五、详细时间表
+====================================================== -->
+
+
+<h2>五、最优方案详细加工时间</h2>
+
+
+<div
+    id="operationTable"
+    class="card"
+>
+
+    请先计算。
+
+</div>
+
+
+
+<!-- ======================================================
+     六、所有方案
+====================================================== -->
+
+
+<h2>六、全部可行机器排序方案</h2>
+
+
+<div class="description">
+
+    本问题共有：
+
+    <b>
+        2! × 3! × 2! = 24
+    </b>
+
+    种机器排序组合。
+
+    <br>
+
+    如果机器排序与工件工艺路线形成循环，
+    则该方案不可行。
+
+    <br>
+
+    程序会自动剔除不可行方案，
+    并按照 Makespan 从小到大排列。
+
+</div>
+
+
+<div id="allSchemes"></div>
+
+
+</div>
+
 
 <script>
-// 读取工件工艺数据
-function getJobData(){
+
+
+/* ======================================================
+   1. 读取输入
+====================================================== */
+
+
+function readTime(id) {
+
+    const value =
+        Number(
+            document.getElementById(id).value
+        );
+
+
+    if (
+        !Number.isFinite(value) ||
+        value <= 0
+    ) {
+
+        throw new Error(
+            id + " 必须输入大于 0 的数字"
+        );
+
+    }
+
+
+    return value;
+
+}
+
+
+
+function getJobData() {
+
+
     return {
-        A:[
-            {machine:"lathe", t:Number(document.getElementById('A1').value)},
-            {machine:"milling", t:Number(document.getElementById('A2').value)},
-            {machine:"grind", t:Number(document.getElementById('A3').value)}
+
+        A: [
+
+            {
+                id: "A1",
+                job: "A",
+                machine: "lathe",
+                machineName: "车床",
+                time: readTime("A1")
+            },
+
+            {
+                id: "A2",
+                job: "A",
+                machine: "milling",
+                machineName: "铣床",
+                time: readTime("A2")
+            },
+
+            {
+                id: "A3",
+                job: "A",
+                machine: "grind",
+                machineName: "磨床",
+                time: readTime("A3")
+            }
+
         ],
-        B:[
-            {machine:"milling", t:Number(document.getElementById('B1').value)},
-            {machine:"lathe", t:Number(document.getElementById('B2').value)}
+
+
+        B: [
+
+            {
+                id: "B1",
+                job: "B",
+                machine: "milling",
+                machineName: "铣床",
+                time: readTime("B1")
+            },
+
+            {
+                id: "B2",
+                job: "B",
+                machine: "lathe",
+                machineName: "车床",
+                time: readTime("B2")
+            }
+
         ],
-        C:[
-            {machine:"milling", t:Number(document.getElementById('C1').value)},
-            {machine:"grind", t:Number(document.getElementById('C2').value)}
+
+
+        C: [
+
+            {
+                id: "C1",
+                job: "C",
+                machine: "milling",
+                machineName: "铣床",
+                time: readTime("C1")
+            },
+
+            {
+                id: "C2",
+                job: "C",
+                machine: "grind",
+                machineName: "磨床",
+                time: readTime("C2")
+            }
+
         ]
-    }
+
+    };
+
 }
 
-// ==========【修复事件驱动Job-shop仿真】==========
-function simulateSchedule(jobPrioritySeq, jobDef){
-    // jobPrioritySeq：工件优先级顺序，工件可以提前进入车间，不需要做完一个再进下一个
-    const machineFree = {lathe:0, milling:0, grind:0};
-    const jobOpIdx = {A:0,B:0,C:0};
-    const jobFinishTime = {A:0,B:0,C:0};
+
+
+/* ======================================================
+   2. 建立工序字典
+====================================================== */
+
+
+function buildOperations(jobData) {
+
+
+    const operations = {};
+
+
+    for (
+        const job of Object.values(jobData)
+    ) {
+
+        for (const op of job) {
+
+            operations[op.id] = op;
+
+        }
+
+    }
+
+
+    return operations;
+
+}
+
+
+
+/* ======================================================
+   3. 每台设备对应哪些工序
+====================================================== */
+
+
+function buildMachineOperations(
+    operations
+) {
+
+
+    const result = {
+
+        lathe: [],
+
+        milling: [],
+
+        grind: []
+
+    };
+
+
+    for (
+        const op of Object.values(operations)
+    ) {
+
+        result[op.machine].push(
+            op.id
+        );
+
+    }
+
+
+    return result;
+
+}
+
+
+
+/* ======================================================
+   4. 工件自身的工艺约束
+====================================================== */
+
+
+function buildJobEdges(jobData) {
+
+
+    const edges = [];
+
+
+    for (
+        const job of Object.values(jobData)
+    ) {
+
+        for (
+            let i = 0;
+            i < job.length - 1;
+            i++
+        ) {
+
+            edges.push([
+
+                job[i].id,
+
+                job[i + 1].id
+
+            ]);
+
+        }
+
+    }
+
+
+    return edges;
+
+}
+
+
+
+/* ======================================================
+   5. 全排列
+====================================================== */
+
+
+function permutations(array) {
+
+
+    if (array.length <= 1) {
+
+        return [
+            array.slice()
+        ];
+
+    }
+
+
+    const result = [];
+
+
+    for (
+        let i = 0;
+        i < array.length;
+        i++
+    ) {
+
+
+        const current =
+            array[i];
+
+
+        const remaining =
+            array
+            .slice(0, i)
+            .concat(
+                array.slice(i + 1)
+            );
+
+
+        const sub =
+            permutations(
+                remaining
+            );
+
+
+        for (
+            const p of sub
+        ) {
+
+            result.push([
+                current,
+                ...p
+            ]);
+
+        }
+
+    }
+
+
+    return result;
+
+}
+
+
+
+/* ======================================================
+   6. 生成 24 种机器排序
+====================================================== */
+
+
+function generateMachineSchedules(
+    machineOps
+) {
+
+
+    const lathe =
+        permutations(
+            machineOps.lathe
+        );
+
+
+    const milling =
+        permutations(
+            machineOps.milling
+        );
+
+
+    const grind =
+        permutations(
+            machineOps.grind
+        );
+
+
+    const result = [];
+
+
+    for (const a of lathe) {
+
+        for (const b of milling) {
+
+            for (const c of grind) {
+
+                result.push({
+
+                    lathe: a,
+
+                    milling: b,
+
+                    grind: c
+
+                });
+
+            }
+
+        }
+
+    }
+
+
+    return result;
+
+}
+
+
+
+/* ======================================================
+   7. 评价一个调度方案
+====================================================== */
+
+
+function evaluateSchedule(
+    machineSchedule,
+    operations,
+    jobEdges
+) {
+
+
+    const nodes =
+        Object.keys(
+            operations
+        );
+
+
+    const edges = [];
+
+
+    /*
+     * 工件工艺约束
+     */
+
+    for (
+        const edge of jobEdges
+    ) {
+
+        edges.push(edge);
+
+    }
+
+
+    /*
+     * 设备加工顺序约束
+     */
+
+    const machineOrders = [
+
+        machineSchedule.lathe,
+
+        machineSchedule.milling,
+
+        machineSchedule.grind
+
+    ];
+
+
+    for (
+        const order of machineOrders
+    ) {
+
+
+        for (
+            let i = 0;
+            i < order.length - 1;
+            i++
+        ) {
+
+            edges.push([
+
+                order[i],
+
+                order[i + 1]
+
+            ]);
+
+        }
+
+    }
+
+
+
+    /*
+     * 建立有向图
+     */
+
+    const graph = {};
+
+    const indegree = {};
+
+
+    for (
+        const node of nodes
+    ) {
+
+        graph[node] = [];
+
+        indegree[node] = 0;
+
+    }
+
+
+    for (
+        const [from, to] of edges
+    ) {
+
+        graph[from].push(to);
+
+        indegree[to]++;
+
+    }
+
+
+
+    /*
+     * 拓扑排序
+     */
+
+    const queue = [];
+
+
+    for (
+        const node of nodes
+    ) {
+
+        if (
+            indegree[node] === 0
+        ) {
+
+            queue.push(node);
+
+        }
+
+    }
+
+
+    const topo = [];
+
+
+    while (
+        queue.length > 0
+    ) {
+
+
+        const current =
+            queue.shift();
+
+
+        topo.push(current);
+
+
+        for (
+            const next of
+            graph[current]
+        ) {
+
+
+            indegree[next]--;
+
+
+            if (
+                indegree[next] === 0
+            ) {
+
+                queue.push(next);
+
+            }
+
+        }
+
+    }
+
+
+
+    /*
+     * 有环 = 不可行
+     */
+
+    if (
+        topo.length !==
+        nodes.length
+    ) {
+
+        return {
+            feasible: false
+        };
+
+    }
+
+
+
+    /*
+     * 最早开始时间
+     */
+
+    const start = {};
+
+    const end = {};
+
+
+    for (
+        const node of nodes
+    ) {
+
+        start[node] = 0;
+
+        end[node] = 0;
+
+    }
+
+
+    for (
+        const current of topo
+    ) {
+
+
+        end[current] =
+            start[current] +
+            operations[current].time;
+
+
+        for (
+            const next of
+            graph[current]
+        ) {
+
+
+            start[next] =
+                Math.max(
+                    start[next],
+                    end[current]
+                );
+
+        }
+
+    }
+
+
+
+    /*
+     * Makespan
+     */
+
+    const makespan =
+        Math.max(
+            ...Object.values(end)
+        );
+
+
+
+    /*
+     * Timeline
+     */
+
     const timeline = [];
-    const jobEnterTime = {};
-    // 工件按优先级，依次可以在时间0进入系统
-    jobPrioritySeq.forEach((jid,idx)=> jobEnterTime[jid]=0);
 
-    let changed = true;
-    while(changed){
-        changed = false;
-        for(const jobId of jobPrioritySeq){
-            const ops = jobDef[jobId];
-            const opIdx = jobOpIdx[jobId];
-            if(opIdx >= ops.length) continue;
-            const op = ops[opIdx];
-            const m = op.machine;
-            //开工条件：工件已进入车间，上道工序完成，设备空闲
-            const readyTime = Math.max(jobEnterTime[jobId], jobFinishTime[jobId], machineFree[m]);
-            if(readyTime > machineFree[m]) continue;
-            // 可以开工
-            const end = readyTime + op.t;
-            timeline.push({job:jobId, machine:m, start:readyTime, end});
-            machineFree[m] = end;
-            jobFinishTime[jobId] = end;
-            jobOpIdx[jobId] +=1;
-            changed = true;
-        }
-    }
-    const makespan = Math.max(...Object.values(machineFree));
-    return {makespan, timeline};
-}
 
-// 生成文本甘特
-function renderGanttText(timeline){
-    let ganttTxt = "";
-    let lathe = timeline.filter(x=>x.machine==="lathe");
-    let mill = timeline.filter(x=>x.machine==="milling");
-    let grind = timeline.filter(x=>x.machine==="grind");
-    ganttTxt += "【车床】"+lathe.map(x=>`工件${x.job}:[${x.start}~${x.end}]`).join(" | ")+"\n";
-    ganttTxt += "【铣床】"+mill.map(x=>`工件${x.job}:[${x.start}~${x.end}]`).join(" | ")+"\n";
-    ganttTxt += "【磨床】"+grind.map(x=>`工件${x.job}:[${x.start}~${x.end}]`).join(" | ")+"\n";
-    return ganttTxt;
-}
+    for (
+        const node of nodes
+    ) {
 
-// 绘制折线图：设备占用时间线
-function drawLineChart(timeline, maxT){
-    const ctx = document.getElementById('myChart').getContext('2d');
-    if(window.chartInstance) window.chartInstance.destroy();
-    const times = [];
-    const latheData = [];
-    const millData = [];
-    const grindData = [];
-    for(let t=0;t<=maxT;t++){
-        times.push(t);
-        latheData.push(isMachineBusy(timeline,"lathe",t) ? 1 : 0);
-        millData.push(isMachineBusy(timeline,"milling",t) ? 1 : 0);
-        grindData.push(isMachineBusy(timeline,"grind",t) ? 1 : 0);
-    }
-    window.chartInstance = new Chart(ctx,{
-        type:'line',
-        data:{
-            labels:times,
-            datasets:[
-                {label:"车床(1=占用，0空闲)",data:latheData,borderColor:"red",fill:false},
-                {label:"铣床(1=占用，0空闲)",data:millData,borderColor:"blue",fill:false},
-                {label:"磨床(1=占用，0空闲)",data:grindData,borderColor:"green",fill:false}
-            ]
-        },
-        options:{title:{display:true,text:"最优方案：设备负载时间折线图"}}
-    })
-}
-function isMachineBusy(timeline,mName,t){
-    for(let item of timeline){
-        if(item.machine === mName && item.start <= t && t < item.end) return true;
-    }
-    return false;
-}
 
-// 全排列生成
-function permute(arr){
-    let res=[];
-    function dfs(rest, path){
-        if(rest.length===0){
-            res.push([...path]);
-            return;
-        }
-        for(let i=0;i<rest.length;i++){
-            let newRest = rest.filter((_,idx)=>idx!==i);
-            dfs(newRest, [...path, rest[i]]);
-        }
-    }
-    dfs(arr,[]);
-    return res;
-}
+        const op =
+            operations[node];
 
-function calcJobShop(){
-    const jobDef = getJobData();
-    const allOrders = permute(['A','B','C']);
-    const resultList = [];
-    for(let seq of allOrders){
-        const sim = simulateSchedule(seq, jobDef);
-        resultList.push({
-            seqStr:seq.join(' → '),
-            mk:sim.makespan,
-            timeline:sim.timeline
+
+        timeline.push({
+
+            id: node,
+
+            job: op.job,
+
+            machine:
+                op.machine,
+
+            machineName:
+                op.machineName,
+
+            time:
+                op.time,
+
+            start:
+                start[node],
+
+            end:
+                end[node]
+
         });
-    }
-    //找最小makespan
-    const minMk = Math.min(...resultList.map(x=>x.mk));
-    const bestSet = resultList.filter(x=>x.mk === minMk);
-    const bestCase = bestSet[0];
 
-    //渲染全部方案+各自甘特图
-    let htmlList = "";
-    for(let item of resultList){
-        let cls = item.mk === minMk ? "opt" : "";
-        htmlList += `<div class="${cls}">顺序：${item.seqStr} ，makespan = ${item.mk}<div class="ganttBlock">${renderGanttText(item.timeline)}</div></div>`;
     }
-    document.getElementById("listAll").innerHTML = htmlList;
-    document.getElementById("resBest").innerText = `最小Makespan=${minMk}，共有${bestSet.length}组最优加工序列`;
-    document.getElementById("tip").innerText = "✅修复完成，B→C→A 最优makespan=16；折线图展示最优方案三台设备随时间的占用状态";
-    drawLineChart(bestCase.timeline, minMk);
+
+
+
+    return {
+
+        feasible: true,
+
+        makespan,
+
+        timeline,
+
+        machineSchedule,
+
+        start,
+
+        end
+
+    };
+
 }
+
+
+
+/* ======================================================
+   8. 计算全部调度
+====================================================== */
+
+
+function calculateAllSchedules(
+    jobData
+) {
+
+
+    const operations =
+        buildOperations(
+            jobData
+        );
+
+
+    const machineOps =
+        buildMachineOperations(
+            operations
+        );
+
+
+    const jobEdges =
+        buildJobEdges(
+            jobData
+        );
+
+
+    const schedules =
+        generateMachineSchedules(
+            machineOps
+        );
+
+
+    const results = [];
+
+
+    for (
+        const schedule of schedules
+    ) {
+
+
+        const result =
+            evaluateSchedule(
+                schedule,
+                operations,
+                jobEdges
+            );
+
+
+        if (
+            result.feasible
+        ) {
+
+            results.push(
+                result
+            );
+
+        }
+
+    }
+
+
+    results.sort(
+        (a,b) =>
+            a.makespan -
+            b.makespan
+    );
+
+
+    return {
+
+        total:
+            schedules.length,
+
+        feasible:
+            results.length,
+
+        results
+
+    };
+
+}
+
+
+
+/* ======================================================
+   9. 绘制甘特图
+====================================================== */
+
+
+function drawGanttChart(
+    result
+) {
+
+
+    const canvas =
+        document.getElementById(
+            "ganttChart"
+        );
+
+
+    if (
+        window.ganttChartInstance
+    ) {
+
+        window.ganttChartInstance.destroy();
+
+    }
+
+
+
+    /*
+     * Chart.js 浮动柱状图
+     *
+     * 每个数据：
+     *
+     * x = [开始时间, 结束时间]
+     */
+
+    const machineNames = [
+
+        "车床",
+
+        "铣床",
+
+        "磨床"
+
+    ];
+
+
+    const machineKeys = [
+
+        "lathe",
+
+        "milling",
+
+        "grind"
+
+    ];
+
+
+    const jobInfo = {
+
+        A: {
+
+            label: "工件 A",
+
+            color:
+                "rgba(30, 136, 229, 0.75)",
+
+            border:
+                "#1565c0"
+
+        },
+
+        B: {
+
+            label: "工件 B",
+
+            color:
+                "rgba(239, 108, 0, 0.75)",
+
+            border:
+                "#ef6c00"
+
+        },
+
+        C: {
+
+            label: "工件 C",
+
+            color:
+                "rgba(46, 125, 50, 0.75)",
+
+            border:
+                "#2e7d32"
+
+        }
+
+    };
+
+
+    const datasets = [];
+
+
+    for (
+        const job of ["A","B","C"]
+    ) {
+
+
+        const data = [];
+
+
+        for (
+            let i = 0;
+            i < machineKeys.length;
+            i++
+        ) {
+
+
+            const op =
+                result.timeline.find(
+                    x =>
+                        x.job === job &&
+                        x.machine ===
+                        machineKeys[i]
+                );
+
+
+            if (op) {
+
+
+                data.push({
+
+                    x: [
+                        op.start,
+                        op.end
+                    ],
+
+                    y:
+                        machineNames[i]
+
+                });
+
+            }
+
+        }
+
+
+        datasets.push({
+
+            label:
+                jobInfo[job].label,
+
+            data,
+
+            backgroundColor:
+                jobInfo[job].color,
+
+            borderColor:
+                jobInfo[job].border,
+
+            borderWidth: 2,
+
+            barPercentage: 0.55
+
+        });
+
+    }
+
+
+
+    window.ganttChartInstance =
+        new Chart(
+
+            canvas,
+
+            {
+
+                type: "bar",
+
+                data: {
+
+                    datasets
+
+                },
+
+                options: {
+
+                    responsive: true,
+
+                    maintainAspectRatio:
+                        false,
+
+                    indexAxis: "y",
+
+
+                    scales: {
+
+                        x: {
+
+                            min: 0,
+
+                            max:
+                                result.makespan,
+
+                            title: {
+
+                                display: true,
+
+                                text:
+                                    "时间"
+
+                            }
+
+                        },
+
+                        y: {
+
+                            type:
+                                "category",
+
+                            labels:
+                                machineNames,
+
+                            title: {
+
+                                display: true,
+
+                                text:
+                                    "设备"
+
+                            }
+
+                        }
+
+                    },
+
+
+                    plugins: {
+
+                        title: {
+
+                            display: true,
+
+                            text:
+                                "最优 Job-shop 调度甘特图"
+
+                        },
+
+
+                        tooltip: {
+
+                            callbacks: {
+
+                                label:
+                                    function(
+                                        context
+                                    ) {
+
+
+                                        const raw =
+                                            context.raw;
+
+
+                                        const job =
+                                            context.dataset.label;
+
+
+                                        if (
+                                            !raw ||
+                                            !raw.x
+                                        ) {
+
+                                            return job;
+
+                                        }
+
+
+                                        return [
+
+                                            job,
+
+                                            "开始：" +
+                                            raw.x[0],
+
+                                            "结束：" +
+                                            raw.x[1],
+
+                                            "加工时间：" +
+                                            (
+                                                raw.x[1] -
+                                                raw.x[0]
+                                            )
+
+                                        ];
+
+                                    }
+
+                            }
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        );
+
+}
+
+
+
+/* ======================================================
+   10. 绘制设备占用折线图
+====================================================== */
+
+
+function drawLineChart(
+    result
+) {
+
+
+    const canvas =
+        document.getElementById(
+            "lineChart"
+        );
+
+
+    if (
+        window.lineChartInstance
+    ) {
+
+        window.lineChartInstance.destroy();
+
+    }
+
+
+    const maxT =
+        result.makespan;
+
+
+    const step =
+        0.1;
+
+
+    const labels = [];
+
+
+    for (
+        let t = 0;
+        t <= maxT;
+        t += step
+    ) {
+
+        labels.push(
+            Number(
+                t.toFixed(1)
+            )
+        );
+
+    }
+
+
+    const machines = [
+
+        {
+            name: "车床",
+            key: "lathe"
+        },
+
+        {
+            name: "铣床",
+            key: "milling"
+        },
+
+        {
+            name: "磨床",
+            key: "grind"
+        }
+
+    ];
+
+
+    const datasets =
+        machines.map(
+            machine => {
+
+
+                const data =
+                    labels.map(
+                        t => {
+
+
+                            const busy =
+                                result.timeline.some(
+                                    op =>
+
+                                        op.machine ===
+                                        machine.key &&
+
+                                        op.start <= t &&
+
+                                        t < op.end
+                                );
+
+
+                            return busy
+                                ? 1
+                                : 0;
+
+                        }
+                    );
+
+
+                return {
+
+                    label:
+                        machine.name,
+
+                    data,
+
+                    borderWidth: 2,
+
+                    fill: false,
+
+                    stepped: true,
+
+                    pointRadius: 0
+
+                };
+
+            }
+        );
+
+
+
+    window.lineChartInstance =
+        new Chart(
+
+            canvas,
+
+            {
+
+                type: "line",
+
+                data: {
+
+                    labels,
+
+                    datasets
+
+                },
+
+
+                options: {
+
+                    responsive: true,
+
+                    maintainAspectRatio:
+                        false,
+
+
+                    scales: {
+
+                        x: {
+
+                            title: {
+
+                                display: true,
+
+                                text:
+                                    "时间"
+
+                            }
+
+                        },
+
+
+                        y: {
+
+                            min: 0,
+
+                            max: 1.2,
+
+                            ticks: {
+
+                                stepSize: 1,
+
+                                callback:
+                                    function(value) {
+
+                                        return value === 1
+                                            ? "占用"
+                                            : "空闲";
+
+                                    }
+
+                            },
+
+                            title: {
+
+                                display: true,
+
+                                text:
+                                    "设备状态"
+
+                            }
+
+                        }
+
+                    },
+
+
+                    plugins: {
+
+                        title: {
+
+                            display: true,
+
+                            text:
+                                "三台设备占用状态折线图"
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        );
+
+}
+
+
+
+/* ======================================================
+   11. 最优结果
+====================================================== */
+
+
+function renderBestResult(
+    best,
+    all
+) {
+
+
+    const bestCount =
+        all.results.filter(
+            x =>
+                x.makespan ===
+                best.makespan
+        ).length;
+
+
+    const html = `
+
+        <h3>
+            全局最优调度结果
+        </h3>
+
+
+        <div class="best-number">
+
+            Makespan = ${best.makespan}
+
+        </div>
+
+
+        <div class="stats">
+
+
+            <div class="stat">
+
+                总机器排序组合
+
+                <b>
+                    ${all.total}
+                </b>
+
+            </div>
+
+
+            <div class="stat">
+
+                可行调度方案
+
+                <b>
+                    ${all.feasible}
+                </b>
+
+            </div>
+
+
+            <div class="stat">
+
+                最优方案数量
+
+                <b>
+                    ${bestCount}
+                </b>
+
+            </div>
+
+
+        </div>
+
+
+        <hr>
+
+
+        <h3>
+            最优机器加工顺序
+        </h3>
+
+
+        <table>
+
+
+            <tr>
+
+                <th>
+                    设备
+                </th>
+
+                <th>
+                    加工顺序
+                </th>
+
+            </tr>
+
+
+            <tr>
+
+                <td>
+                    车床
+                </td>
+
+                <td>
+                    ${best.machineSchedule.lathe.join(" → ")}
+                </td>
+
+            </tr>
+
+
+            <tr>
+
+                <td>
+                    铣床
+                </td>
+
+                <td>
+                    ${best.machineSchedule.milling.join(" → ")}
+                </td>
+
+            </tr>
+
+
+            <tr>
+
+                <td>
+                    磨床
+                </td>
+
+                <td>
+                    ${best.machineSchedule.grind.join(" → ")}
+                </td>
+
+            </tr>
+
+
+        </table>
+
+
+        <p class="success">
+
+            ✓ 已完成全部可行调度方案搜索
+
+        </p>
+
+    `;
+
+
+    document.getElementById(
+        "bestResult"
+    ).innerHTML = html;
+
+}
+
+
+
+/* ======================================================
+   12. 详细加工时间
+====================================================== */
+
+
+function renderOperationTable(
+    result
+) {
+
+
+    const list =
+        [...result.timeline]
+        .sort(
+            (a,b) =>
+                a.id.localeCompare(
+                    b.id
+                )
+        );
+
+
+    let html = `
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        工件
+                    </th>
+
+                    <th>
+                        工序
+                    </th>
+
+                    <th>
+                        设备
+                    </th>
+
+                    <th>
+                        加工时间
+                    </th>
+
+                    <th>
+                        开始时间
+                    </th>
+
+                    <th>
+                        结束时间
+                    </th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+    `;
+
+
+    for (
+        const op of list
+    ) {
+
+
+        html += `
+
+            <tr>
+
+                <td>
+                    ${op.job}
+                </td>
+
+                <td>
+                    ${op.id}
+                </td>
+
+                <td>
+                    ${op.machineName}
+                </td>
+
+                <td>
+                    ${op.time}
+                </td>
+
+                <td>
+                    ${op.start}
+                </td>
+
+                <td>
+                    ${op.end}
+                </td>
+
+            </tr>
+
+        `;
+
+    }
+
+
+    html += `
+
+            </tbody>
+
+        </table>
+
+    `;
+
+
+    document.getElementById(
+        "operationTable"
+    ).innerHTML = html;
+
+}
+
+
+
+/* ======================================================
+   13. 文本甘特图
+====================================================== */
+
+
+function renderTextGantt(
+    result
+) {
+
+
+    const machines = [
+
+        {
+            key: "lathe",
+            name: "车床"
+        },
+
+        {
+            key: "milling",
+            name: "铣床"
+        },
+
+        {
+            key: "grind",
+            name: "磨床"
+        }
+
+    ];
+
+
+    let text = "";
+
+
+    for (
+        const machine of machines
+    ) {
+
+
+        const list =
+            result.timeline
+            .filter(
+                op =>
+                    op.machine ===
+                    machine.key
+            )
+            .sort(
+                (a,b) =>
+                    a.start -
+                    b.start
+            );
+
+
+        text +=
+            "【" +
+            machine.name +
+            "】 ";
+
+
+        text +=
+            list.map(
+                op =>
+                    `${op.id}[${op.start}~${op.end}]`
+            ).join(
+                " → "
+            );
+
+
+        text += "\n";
+
+    }
+
+
+    return text;
+
+}
+
+
+
+/* ======================================================
+   14. 全部方案
+====================================================== */
+
+
+function renderAllSchemes(
+    all
+) {
+
+
+    const min =
+        all.results[0].makespan;
+
+
+    let html = "";
+
+
+    all.results.forEach(
+        (result,index) => {
+
+
+            const isBest =
+                result.makespan === min;
+
+
+            html += `
+
+                <div
+                    class="
+                        scheme
+                        ${isBest ? "best" : ""}
+                    "
+                >
+
+
+                    <div
+                        class="scheme-title"
+                    >
+
+                        方案 ${index + 1}
+
+
+                        ${
+                            isBest
+                            ?
+                            `
+                            <span
+                                class="tag"
+                            >
+                                最优
+                            </span>
+                            `
+                            :
+                            ""
+                        }
+
+
+                        <br>
+
+
+                        Makespan：
+
+                        <b>
+                            ${result.makespan}
+                        </b>
+
+                    </div>
+
+
+                    <table>
+
+
+                        <tr>
+
+                            <th>
+                                车床
+                            </th>
+
+                            <td>
+                                ${
+                                    result
+                                    .machineSchedule
+                                    .lathe
+                                    .join(
+                                        " → "
+                                    )
+                                }
+                            </td>
+
+                        </tr>
+
+
+                        <tr>
+
+                            <th>
+                                铣床
+                            </th>
+
+                            <td>
+                                ${
+                                    result
+                                    .machineSchedule
+                                    .milling
+                                    .join(
+                                        " → "
+                                    )
+                                }
+                            </td>
+
+                        </tr>
+
+
+                        <tr>
+
+                            <th>
+                                磨床
+                            </th>
+
+                            <td>
+                                ${
+                                    result
+                                    .machineSchedule
+                                    .grind
+                                    .join(
+                                        " → "
+                                    )
+                                }
+                            </td>
+
+                        </tr>
+
+
+                    </table>
+
+
+                    <div
+                        class="gantt-text"
+                    >
+
+                        ${
+                            renderTextGantt(
+                                result
+                            )
+                        }
+
+                    </div>
+
+
+                </div>
+
+            `;
+
+        }
+    );
+
+
+    document.getElementById(
+        "allSchemes"
+    ).innerHTML = html;
+
+}
+
+
+
+/* ======================================================
+   15. 主程序
+====================================================== */
+
+
+function calculateJobShop() {
+
+
+    try {
+
+
+        document.getElementById(
+            "errorMessage"
+        ).innerText = "";
+
+
+        /*
+         * 读取数据
+         */
+
+        const jobData =
+            getJobData();
+
+
+        /*
+         * 计算全部方案
+         */
+
+        const all =
+            calculateAllSchedules(
+                jobData
+            );
+
+
+        if (
+            all.results.length === 0
+        ) {
+
+            throw new Error(
+                "没有找到可行调度方案"
+            );
+
+        }
+
+
+        /*
+         * 最优方案
+         */
+
+        const best =
+            all.results[0];
+
+
+        /*
+         * 显示最优结果
+         */
+
+        renderBestResult(
+            best,
+            all
+        );
+
+
+        /*
+         * 甘特图
+         */
+
+        drawGanttChart(
+            best
+        );
+
+
+        /*
+         * 折线图
+         */
+
+        drawLineChart(
+            best
+        );
+
+
+        /*
+         * 详细时间表
+         */
+
+        renderOperationTable(
+            best
+        );
+
+
+        /*
+         * 全部方案
+         */
+
+        renderAllSchemes(
+            all
+        );
+
+
+    }
+    catch(error) {
+
+
+        console.error(error);
+
+
+        document.getElementById(
+            "errorMessage"
+        ).innerText =
+            "计算错误：" +
+            error.message;
+
+    }
+
+}
+
+
+
+/* ======================================================
+   16. 恢复默认数据
+====================================================== */
+
+
+function resetData() {
+
+
+    document.getElementById(
+        "A1"
+    ).value = 5;
+
+
+    document.getElementById(
+        "A2"
+    ).value = 3;
+
+
+    document.getElementById(
+        "A3"
+    ).value = 2;
+
+
+    document.getElementById(
+        "B1"
+    ).value = 4;
+
+
+    document.getElementById(
+        "B2"
+    ).value = 8;
+
+
+    document.getElementById(
+        "C1"
+    ).value = 6;
+
+
+    document.getElementById(
+        "C2"
+    ).value = 2;
+
+
+    calculateJobShop();
+
+}
+
+
+
+/* ======================================================
+   17. 页面打开自动计算
+====================================================== */
+
+
+window.addEventListener(
+    "load",
+    function() {
+
+        calculateJobShop();
+
+    }
+);
+
 </script>
+
 </body>
+
 </html>
